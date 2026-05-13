@@ -1,7 +1,7 @@
-#include <catch2/catch_all.hpp>
-#include <algorithm>
-#include "index/InvertedIndex.hpp"
 #include "index/DocumentBuilder.hpp"
+#include "index/InvertedIndex.hpp"
+#include <algorithm>
+#include <catch2/catch_all.hpp>
 
 using namespace idx;
 
@@ -107,4 +107,3 @@ TEST_CASE("after removing all documents search returns empty", "[inverted_index]
 
     REQUIRE(inv.search("only").empty());
 }
-

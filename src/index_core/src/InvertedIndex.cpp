@@ -99,4 +99,3 @@ std::string InvertedIndex::toLower(const std::string& word)
 }
 
 } // namespace idx
-

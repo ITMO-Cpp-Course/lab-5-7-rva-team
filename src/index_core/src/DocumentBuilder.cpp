@@ -21,4 +21,3 @@ Document DocumentBuilder::build(size_t id)
 }
 
 } // namespace idx
-

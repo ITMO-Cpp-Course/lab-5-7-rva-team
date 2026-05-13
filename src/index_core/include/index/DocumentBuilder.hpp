@@ -1,6 +1,6 @@
 #pragma once
-#include <string>
 #include "index/Document.hpp"
+#include <string>
 
 namespace idx
 {
@@ -23,4 +23,3 @@ class DocumentBuilder
 };
 
 } // namespace idx
-

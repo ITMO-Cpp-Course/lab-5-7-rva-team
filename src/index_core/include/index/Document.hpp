@@ -27,3 +27,4 @@ class Document
 };
 
 } // namespace idx
+

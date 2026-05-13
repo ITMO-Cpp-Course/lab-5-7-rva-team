@@ -1,8 +1,8 @@
 #pragma once
+#include "index/Document.hpp"
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include "index/Document.hpp"
 
 namespace idx
 {
@@ -39,4 +39,3 @@ class InvertedIndex
 };
 
 } // namespace idx
-

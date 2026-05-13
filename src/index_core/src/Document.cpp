@@ -46,3 +46,4 @@ const std::string& Document::getText() const
 }
 
 } // namespace idx
+
