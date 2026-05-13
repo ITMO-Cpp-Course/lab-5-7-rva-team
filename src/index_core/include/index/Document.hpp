@@ -1,7 +1,7 @@
 #pragma once
 #include <string>
 
-namespace index
+namespace idx
 {
 
 class Document
@@ -26,4 +26,5 @@ class Document
     std::string text;
 };
 
-} // namespace index
+} // namespace idx
+

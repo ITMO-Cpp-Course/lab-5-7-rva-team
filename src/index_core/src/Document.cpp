@@ -1,6 +1,6 @@
 #include "index/Document.hpp"
 
-namespace index
+namespace idx
 {
 
 Document::Document(size_t idx_, const std::string& name_, const std::string& text_)
@@ -17,7 +17,7 @@ Document::Document(Document&& other) noexcept : idx{other.idx}, name{other.name}
 
 Document& Document::operator=(Document&& other) noexcept
 {
-    if (this != other)
+    if (this != &other)
     {
         idx = other.idx;
         name = other.name;
@@ -45,4 +45,5 @@ const std::string& Document::getText() const
     return text;
 }
 
-} // namespace index
+} // namespace idx
+
