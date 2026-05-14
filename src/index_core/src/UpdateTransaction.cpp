@@ -19,21 +19,21 @@ void UpdateTransaction::add(Document doc)
 {
     if (committed)
     {
-        return; // ошибка - транзакция неактивна или коммит уже сделан
+        return; // error - transaction not active
     }
 
     size_t id = doc.getIndex();
     if (isInToAdd(id))
     {
-        return; // ошибка - документ уже в списке на добавление, добавление дубликата некорректно
+        return; // error - doc already in to_add list, no need to add twice
     }
     if (isInToRemove(id))
     {
-        return; // ошибка - документ в списке на удаление, нет смысла добавлять
+        return; // error - doc in to_remove list, no need to add
     }
-    if (store->has(id)) // предполагается проверка на наличие документа в indexstore
+    if (store->has(id)) // supposed method for checking if the doc is in IndexStore
     {
-        return; // ошибка - документ уже в indexstore, добавление дубликата некорректно
+        return; // error - doc already in IndexStore, no need to add twice
     }
 
     to_add.push_back(std::move(doc));
@@ -44,20 +44,20 @@ void UpdateTransaction::remove(size_t id)
 {
     if (committed)
     {
-        return; // ошибка - транзакция неактивна или коммит уже сделан
+        return; // error - transaction not active
     }
 
     if (isInToAdd(id))
     {
-        return; // ошибка - документ уже в списке на добавление, нет смысла удалять
+        return; // error - doc in to_add list, no need to remove
     }
     if (isInToRemove(id))
     {
-        return; // ошибка - документ в списке на удаление, удалять нечего
+        return; // error - doc already in to_remove list, no need to remove twice
     }
-    if (!store->has(id)) // проверка на наличие документа в indexstore
+    if (!store->has(id)) // supposed method for checking if the doc is in IndexStore
     {
-        return; // ошибка - документа нет в indexstore, удалять нечего
+        return; // error - no doc in IndexStore, nothing to remove
     }
 
     to_remove.push_back(id);
@@ -68,25 +68,25 @@ void UpdateTransaction::commit()
 {
     if (committed)
     {
-        return; // ошибка - транзакция неактивна или коммит уже сделан
+        return; // error - transaction not active
     }
 
-    // можно докинуть повторные проверки, но как будто это излишне
+    // might wanna add more validity checks, but seems like overkill
 
     for (auto& doc : to_add)
     {
-        store->getIndex().add(std::move(doc)); // предполагается метод добавления элементов в indexstore
+        store->getIndex().add(std::move(doc)); // supposed method for adding objects in IndexStore
     }
     for (size_t id : to_remove)
     {
-        store->getIndex().remove(id); // предполагается метод удаления элементов в indexstore
+        store->getIndex().remove(id); // supposed method for removing objects in IndexStore
     }
 
     committed = true;
     to_add.clear();
     to_remove.clear();
-    store->setTransactionActive(false); // предполагается переключене флага в indexstore, который бы запрещал операции
-                                        // над индексом в ходе транзакции
+    store->setTransactionActive(
+        false); // supposed flag switch in IndexStore, the flag should prohibit index changes during the transaction
     store = nullptr;
     return;
 }
@@ -100,7 +100,7 @@ bool UpdateTransaction::isInToAdd(size_t id) const
             return true;
         }
     }
-    
+
     return false;
 }
 
@@ -123,8 +123,8 @@ void UpdateTransaction::rollback()
     to_remove.clear();
     if (store)
     {
-        store->setTransactionActive(false); // предполагается переключене флага в indexstore, который бы запрещал операции
-                                            // над индексом в ходе транзакции
+        store->setTransactionActive(
+            false); // supposed flag switch in IndexStore, the flag should prohibit index changes during the transaction
         store = nullptr;
     }
     committed = false;

@@ -14,7 +14,7 @@ class UpdateTransaction
     UpdateTransaction(IndexStore& store_);
     ~UpdateTransaction();
 
-    // запрет копирования и перемещения (возможно придется вернуть перемещение)
+    // prohibited copying and moving (might wanna put moving back though, idk)
     UpdateTransaction(const UpdateTransaction&) = delete;
     UpdateTransaction& operator=(const UpdateTransaction&) = delete;
     UpdateTransaction(UpdateTransaction&& other) = delete;
