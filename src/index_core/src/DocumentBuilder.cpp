@@ -6,14 +6,11 @@ namespace idx
 DocumentBuilder& DocumentBuilder::setName(const std::string& name)
 {
     name_ = name;
-
     return *this;
 }
-
 DocumentBuilder& DocumentBuilder::setText(const std::string& text)
 {
     text_ = text;
-
     return *this;
 }
 

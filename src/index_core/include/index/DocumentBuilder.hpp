@@ -10,6 +10,7 @@ class DocumentBuilder
   public:
     DocumentBuilder& setName(const std::string& name);
     DocumentBuilder& setText(const std::string& text);
+
     Document build(size_t id);
 
   private:
