@@ -27,4 +27,3 @@ class Document
 };
 
 } // namespace idx
-

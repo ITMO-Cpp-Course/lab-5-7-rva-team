@@ -1,4 +1,4 @@
-add_library(index_core STATIC src/InvertedIndex.cpp "src/Document.cpp" "src/DocumentBuilder.cpp")
+add_library(index_core STATIC src/InvertedIndex.cpp "src/Document.cpp" "src/DocumentBuilder.cpp" "src/IndexStore.cpp" "src/Result.cpp" "src/UpdateTransaction.cpp")
 
 target_link_libraries(index_core PRIVATE project_warnings)
 if (TARGET project_sanitizers)
