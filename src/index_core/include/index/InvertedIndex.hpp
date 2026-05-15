@@ -18,6 +18,9 @@ class InvertedIndex
     // Удалить документ и все его слова из индекса
     void remove(size_t docId);
 
+    // Проверить, существует ли документ с данным id
+    bool has(size_t docId) const;
+
     // Вернуть ID всех документов, в которых встречается слово (регистр не важен)
     std::vector<size_t> search(const std::string& word) const;
 

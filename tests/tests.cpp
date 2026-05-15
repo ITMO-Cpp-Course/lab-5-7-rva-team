@@ -1,5 +1,7 @@
 #include "index/DocumentBuilder.hpp"
+#include "index/IndexStore.hpp"
 #include "index/InvertedIndex.hpp"
+#include "index/UpdateTransaction.hpp"
 #include <algorithm>
 #include <catch2/catch_all.hpp>
 
@@ -106,4 +108,123 @@ TEST_CASE("after removing all documents search returns empty", "[inverted_index]
     inv.remove(1);
 
     REQUIRE(inv.search("only").empty());
+}
+
+// ── IndexStore: базовые операции ─────────────────────────────────────────────
+
+TEST_CASE("IndexStore: add and search document", "[index_store]")
+{
+    IndexStore store;
+    auto result = store.add(DocumentBuilder{}.setName("a").setText("cat sat").build(1));
+
+    REQUIRE(result.has_value());
+    REQUIRE(store.search("cat")->size() == 1);
+}
+
+TEST_CASE("IndexStore: add duplicate returns DocumentAlreadyExists", "[index_store]")
+{
+    IndexStore store;
+    store.add(DocumentBuilder{}.setName("a").setText("cat").build(1));
+
+    auto result = store.add(DocumentBuilder{}.setName("b").setText("dog").build(1));
+
+    REQUIRE(!result.has_value());
+    REQUIRE(result.error() == IndexError::DocumentAlreadyExists);
+}
+
+TEST_CASE("IndexStore: remove existing document", "[index_store]")
+{
+    IndexStore store;
+    store.add(DocumentBuilder{}.setName("a").setText("cat sat").build(1));
+
+    auto result = store.remove(1);
+
+    REQUIRE(result.has_value());
+    REQUIRE(store.search("cat")->empty());
+}
+
+TEST_CASE("IndexStore: remove non-existent returns DocumentNotFound", "[index_store]")
+{
+    IndexStore store;
+
+    auto result = store.remove(999);
+
+    REQUIRE(!result.has_value());
+    REQUIRE(result.error() == IndexError::DocumentNotFound);
+}
+
+// ── UpdateTransaction: commit ─────────────────────────────────────────────────
+
+TEST_CASE("UpdateTransaction: commit applies all staged changes", "[transaction]")
+{
+    IndexStore store;
+    store.add(DocumentBuilder{}.setName("a").setText("cat sat").build(1));
+
+    store.beginTransaction();
+    {
+        UpdateTransaction tx(store);
+        tx.add(DocumentBuilder{}.setName("b").setText("dog ran").build(2));
+        tx.remove(1);
+        tx.commit();
+    }
+
+    REQUIRE(store.search("dog")->size() == 1);
+    REQUIRE(store.search("cat")->empty());
+}
+
+// ── UpdateTransaction: rollback ───────────────────────────────────────────────
+
+TEST_CASE("UpdateTransaction: rollback on scope exit leaves state unchanged", "[transaction]")
+{
+    IndexStore store;
+    store.add(DocumentBuilder{}.setName("a").setText("cat sat").build(1));
+
+    store.beginTransaction();
+    {
+        UpdateTransaction tx(store);
+        tx.add(DocumentBuilder{}.setName("b").setText("dog ran").build(2));
+        tx.remove(1);
+        // нет commit() — деструктор вызовет rollback()
+    }
+
+    REQUIRE(store.search("cat")->size() == 1);
+    REQUIRE(store.search("dog")->empty());
+}
+
+// ── IndexStore: блокировка во время транзакции ────────────────────────────────
+
+TEST_CASE("IndexStore: direct add blocked during active transaction", "[transaction]")
+{
+    IndexStore store;
+    store.beginTransaction();
+
+    auto result = store.add(DocumentBuilder{}.setName("a").setText("cat").build(1));
+
+    REQUIRE(!result.has_value());
+    REQUIRE(result.error() == IndexError::TransactionAlreadyActive);
+}
+
+TEST_CASE("IndexStore: beginTransaction returns error if already active", "[transaction]")
+{
+    IndexStore store;
+    store.beginTransaction();
+
+    auto result = store.beginTransaction();
+
+    REQUIRE(!result.has_value());
+    REQUIRE(result.error() == IndexError::TransactionAlreadyActive);
+}
+
+TEST_CASE("IndexStore: direct operations available again after transaction ends", "[transaction]")
+{
+    IndexStore store;
+
+    store.beginTransaction();
+    {
+        UpdateTransaction tx(store);
+        tx.commit();
+    }
+
+    auto result = store.add(DocumentBuilder{}.setName("a").setText("cat").build(1));
+    REQUIRE(result.has_value());
 }
