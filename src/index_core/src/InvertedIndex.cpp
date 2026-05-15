@@ -29,12 +29,17 @@ void InvertedIndex::remove(size_t docId)
     {
         it->second.erase(docId);
         if (it->second.empty())
-            it = index.erase(it); // erase возвращает итератор на следующий элемент
+            it = index.erase(it);
         else
             ++it;
     }
 
     docs.erase(docId);
+}
+
+bool InvertedIndex::has(size_t docId) const
+{
+    return docs.find(docId) != docs.end();
 }
 
 std::vector<size_t> InvertedIndex::search(const std::string& word) const
@@ -43,7 +48,7 @@ std::vector<size_t> InvertedIndex::search(const std::string& word) const
     if (it == index.end())
         return {};
 
-    // Собираем только ID документов (количество вхождений здесь не нужно)
+    // Собираем только ID документов (без количества вхождений)
     std::vector<size_t> result;
     for (const auto& [docId, count] : it->second)
         result.push_back(docId);
@@ -70,7 +75,6 @@ std::vector<std::string> InvertedIndex::tokenize(const std::string& text)
     std::string word;
 
     // Читаем символ за символом: буквы накапливаем в слово, всё остальное — разделитель.
-    // cast в unsigned char обязателен: isalpha/tolower не работают корректно с char на macOS.
     for (char ch : text)
     {
         auto c = static_cast<unsigned char>(ch);
