@@ -9,46 +9,46 @@ UpdateTransaction::UpdateTransaction(IndexStore& store_) : store{&store_} {}
 UpdateTransaction::~UpdateTransaction()
 {
     if (!committed)
-    {
         rollback();
-    }
 }
 
-void UpdateTransaction::add(Document doc)
+Result<void> UpdateTransaction::add(Document doc)
 {
     if (committed)
-        return;
+        return std::unexpected(IndexError::TransactionCommitted);
 
     size_t id = doc.getIndex();
     if (isInToAdd(id))
-        return;
+        return std::unexpected(IndexError::DocumentAlreadyInAdditionList);
     if (isInToRemove(id))
-        return;
+        return std::unexpected(IndexError::DocumentAlreadyInRemovalList);
     if (store->has(id))
-        return;
+        return std::unexpected(IndexError::DocumentAlreadyExists);
 
     to_add.push_back(std::move(doc));
+    return {};
 }
 
-void UpdateTransaction::remove(size_t id)
+Result<void> UpdateTransaction::remove(size_t id)
 {
     if (committed)
-        return;
+        return std::unexpected(IndexError::TransactionCommitted);
 
     if (isInToAdd(id))
-        return;
+        return std::unexpected(IndexError::DocumentAlreadyInAdditionList);
     if (isInToRemove(id))
-        return;
+        return std::unexpected(IndexError::DocumentAlreadyInRemovalList);
     if (!store->has(id))
-        return;
+        return std::unexpected(IndexError::DocumentNotFound);
 
     to_remove.push_back(id);
+    return {};
 }
 
-void UpdateTransaction::commit()
+Result<void> UpdateTransaction::commit()
 {
     if (committed)
-        return;
+        return std::unexpected(IndexError::TransactionCommitted);
 
     for (auto& doc : to_add)
         store->getIndex().add(std::move(doc));
@@ -61,6 +61,7 @@ void UpdateTransaction::commit()
     to_remove.clear();
     store->setTransactionActive(false);
     store = nullptr;
+    return {};
 }
 
 bool UpdateTransaction::isInToAdd(size_t id) const

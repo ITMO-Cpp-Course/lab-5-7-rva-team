@@ -7,7 +7,7 @@
 
 using namespace idx;
 
-// ── DocumentBuilder ──────────────────────────────────────────────────────────
+// ── DocumentBuilder ───────────────────────────────────────────────────────────
 
 TEST_CASE("DocumentBuilder creates a document with correct fields", "[builder]")
 {
@@ -20,7 +20,7 @@ TEST_CASE("DocumentBuilder creates a document with correct fields", "[builder]")
 
 // ── InvertedIndex: добавление и поиск ────────────────────────────────────────
 
-TEST_CASE("search finds documents that contain the word", "[inverted_index]")
+TEST_CASE("InvertedIndex: search finds documents containing the word", "[inverted_index]")
 {
     InvertedIndex inv;
     inv.add(DocumentBuilder{}.setName("a").setText("cat sat on mat").build(1));
@@ -34,7 +34,7 @@ TEST_CASE("search finds documents that contain the word", "[inverted_index]")
     REQUIRE(std::find(results.begin(), results.end(), 2) != results.end());
 }
 
-TEST_CASE("search returns empty when word is not in index", "[inverted_index]")
+TEST_CASE("InvertedIndex: search returns empty when word is absent", "[inverted_index]")
 {
     InvertedIndex inv;
     inv.add(DocumentBuilder{}.setName("a").setText("hello world").build(1));
@@ -42,7 +42,7 @@ TEST_CASE("search returns empty when word is not in index", "[inverted_index]")
     REQUIRE(inv.search("missing").empty());
 }
 
-TEST_CASE("search is case-insensitive", "[inverted_index]")
+TEST_CASE("InvertedIndex: search is case-insensitive", "[inverted_index]")
 {
     InvertedIndex inv;
     inv.add(DocumentBuilder{}.setName("a").setText("Hello World").build(1));
@@ -52,9 +52,9 @@ TEST_CASE("search is case-insensitive", "[inverted_index]")
     REQUIRE(inv.search("Hello").size() == 1);
 }
 
-// ── InvertedIndex: подсчёт вхождений ────────────────────────────────────────
+// ── InvertedIndex: подсчёт вхождений ─────────────────────────────────────────
 
-TEST_CASE("wordCount returns correct number of occurrences", "[inverted_index]")
+TEST_CASE("InvertedIndex: wordCount returns correct number of occurrences", "[inverted_index]")
 {
     InvertedIndex inv;
     inv.add(DocumentBuilder{}.setName("a").setText("the cat sat on the mat the cat").build(1));
@@ -64,7 +64,7 @@ TEST_CASE("wordCount returns correct number of occurrences", "[inverted_index]")
     REQUIRE(inv.wordCount("sat", 1) == 1);
 }
 
-TEST_CASE("wordCount returns 0 for absent word", "[inverted_index]")
+TEST_CASE("InvertedIndex: wordCount returns 0 for absent word", "[inverted_index]")
 {
     InvertedIndex inv;
     inv.add(DocumentBuilder{}.setName("a").setText("hello world").build(1));
@@ -72,7 +72,7 @@ TEST_CASE("wordCount returns 0 for absent word", "[inverted_index]")
     REQUIRE(inv.wordCount("dog", 1) == 0);
 }
 
-TEST_CASE("wordCount returns 0 for absent document", "[inverted_index]")
+TEST_CASE("InvertedIndex: wordCount returns 0 for absent document", "[inverted_index]")
 {
     InvertedIndex inv;
     inv.add(DocumentBuilder{}.setName("a").setText("hello").build(1));
@@ -80,9 +80,9 @@ TEST_CASE("wordCount returns 0 for absent document", "[inverted_index]")
     REQUIRE(inv.wordCount("hello", 999) == 0);
 }
 
-// ── InvertedIndex: удаление ──────────────────────────────────────────────────
+// ── InvertedIndex: удаление ───────────────────────────────────────────────────
 
-TEST_CASE("remove deletes document from search results", "[inverted_index]")
+TEST_CASE("InvertedIndex: remove deletes document from search results", "[inverted_index]")
 {
     InvertedIndex inv;
     inv.add(DocumentBuilder{}.setName("a").setText("cat sat").build(1));
@@ -95,13 +95,13 @@ TEST_CASE("remove deletes document from search results", "[inverted_index]")
     REQUIRE(results[0] == 2);
 }
 
-TEST_CASE("remove non-existent document does not crash", "[inverted_index]")
+TEST_CASE("InvertedIndex: remove non-existent document does not crash", "[inverted_index]")
 {
     InvertedIndex inv;
     REQUIRE_NOTHROW(inv.remove(999));
 }
 
-TEST_CASE("after removing all documents search returns empty", "[inverted_index]")
+TEST_CASE("InvertedIndex: search returns empty after all documents removed", "[inverted_index]")
 {
     InvertedIndex inv;
     inv.add(DocumentBuilder{}.setName("a").setText("only word").build(1));
@@ -110,121 +110,172 @@ TEST_CASE("after removing all documents search returns empty", "[inverted_index]
     REQUIRE(inv.search("only").empty());
 }
 
-// ── IndexStore: базовые операции ─────────────────────────────────────────────
+// ── IndexStore: search (доступен без транзакции) ──────────────────────────────
 
-TEST_CASE("IndexStore: add and search document", "[index_store]")
+TEST_CASE("IndexStore: search works without a transaction", "[index_store]")
 {
     IndexStore store;
-    auto result = store.add(DocumentBuilder{}.setName("a").setText("cat sat").build(1));
 
-    REQUIRE(result.has_value());
-    REQUIRE(store.search("cat")->size() == 1);
+    REQUIRE(store.search("cat").empty());
 }
 
-TEST_CASE("IndexStore: add duplicate returns DocumentAlreadyExists", "[index_store]")
+// ── IndexStore: add и remove требуют транзакцию ───────────────────────────────
+
+TEST_CASE("IndexStore: add without transaction returns TransactionNotActive", "[index_store]")
 {
     IndexStore store;
-    store.add(DocumentBuilder{}.setName("a").setText("cat").build(1));
 
-    auto result = store.add(DocumentBuilder{}.setName("b").setText("dog").build(1));
+    auto result = store.add(DocumentBuilder{}.setName("a").setText("cat").build(1));
 
-    REQUIRE(!result.has_value());
-    REQUIRE(result.error() == IndexError::DocumentAlreadyExists);
+    REQUIRE_FALSE(result.has_value());
+    REQUIRE(result.error() == IndexError::TransactionNotActive);
 }
 
-TEST_CASE("IndexStore: remove existing document", "[index_store]")
+TEST_CASE("IndexStore: remove without transaction returns TransactionNotActive", "[index_store]")
 {
     IndexStore store;
-    store.add(DocumentBuilder{}.setName("a").setText("cat sat").build(1));
 
     auto result = store.remove(1);
 
-    REQUIRE(result.has_value());
-    REQUIRE(store.search("cat")->empty());
+    REQUIRE_FALSE(result.has_value());
+    REQUIRE(result.error() == IndexError::TransactionNotActive);
 }
 
-TEST_CASE("IndexStore: remove non-existent returns DocumentNotFound", "[index_store]")
+// ── IndexStore: beginTransaction ──────────────────────────────────────────────
+
+TEST_CASE("IndexStore: beginTransaction succeeds when no transaction is active", "[index_store]")
 {
     IndexStore store;
 
-    auto result = store.remove(999);
-
-    REQUIRE(!result.has_value());
-    REQUIRE(result.error() == IndexError::DocumentNotFound);
+    REQUIRE(store.beginTransaction().has_value());
 }
 
-// ── UpdateTransaction: commit ─────────────────────────────────────────────────
-
-TEST_CASE("UpdateTransaction: commit applies all staged changes", "[transaction]")
+TEST_CASE("IndexStore: beginTransaction returns error if already active", "[index_store]")
 {
     IndexStore store;
-    store.add(DocumentBuilder{}.setName("a").setText("cat sat").build(1));
-
-    store.beginTransaction();
-    {
-        UpdateTransaction tx(store);
-        tx.add(DocumentBuilder{}.setName("b").setText("dog ran").build(2));
-        tx.remove(1);
-        tx.commit();
-    }
-
-    REQUIRE(store.search("dog")->size() == 1);
-    REQUIRE(store.search("cat")->empty());
-}
-
-// ── UpdateTransaction: rollback ───────────────────────────────────────────────
-
-TEST_CASE("UpdateTransaction: rollback on scope exit leaves state unchanged", "[transaction]")
-{
-    IndexStore store;
-    store.add(DocumentBuilder{}.setName("a").setText("cat sat").build(1));
-
-    store.beginTransaction();
-    {
-        UpdateTransaction tx(store);
-        tx.add(DocumentBuilder{}.setName("b").setText("dog ran").build(2));
-        tx.remove(1);
-        // нет commit() — деструктор вызовет rollback()
-    }
-
-    REQUIRE(store.search("cat")->size() == 1);
-    REQUIRE(store.search("dog")->empty());
-}
-
-// ── IndexStore: блокировка во время транзакции ────────────────────────────────
-
-TEST_CASE("IndexStore: direct add blocked during active transaction", "[transaction]")
-{
-    IndexStore store;
-    store.beginTransaction();
-
-    auto result = store.add(DocumentBuilder{}.setName("a").setText("cat").build(1));
-
-    REQUIRE(!result.has_value());
-    REQUIRE(result.error() == IndexError::TransactionAlreadyActive);
-}
-
-TEST_CASE("IndexStore: beginTransaction returns error if already active", "[transaction]")
-{
-    IndexStore store;
-    store.beginTransaction();
+    auto tmp = store.beginTransaction();
 
     auto result = store.beginTransaction();
 
-    REQUIRE(!result.has_value());
+    REQUIRE(tmp.has_value());
+    REQUIRE_FALSE(result.has_value());
     REQUIRE(result.error() == IndexError::TransactionAlreadyActive);
 }
 
-TEST_CASE("IndexStore: direct operations available again after transaction ends", "[transaction]")
+// ── IndexStore: commitTransaction ─────────────────────────────────────────────
+
+TEST_CASE("IndexStore: commitTransaction without beginTransaction returns error", "[index_store]")
+{
+    IndexStore store;
+
+    auto result = store.commitTransaction();
+
+    REQUIRE_FALSE(result.has_value());
+    REQUIRE(result.error() == IndexError::TransactionNotActive);
+}
+
+TEST_CASE("IndexStore: commit applies added documents — search finds them", "[index_store]")
 {
     IndexStore store;
 
     store.beginTransaction();
-    {
-        UpdateTransaction tx(store);
-        tx.commit();
-    }
+    store.add(DocumentBuilder{}.setName("a").setText("cat sat").build(1));
+    store.add(DocumentBuilder{}.setName("b").setText("dog ran").build(2));
+    store.commitTransaction();
 
-    auto result = store.add(DocumentBuilder{}.setName("a").setText("cat").build(1));
+    REQUIRE(store.search("cat").size() == 1);
+    REQUIRE(store.search("dog").size() == 1);
+}
+
+TEST_CASE("IndexStore: commit applies removed documents — search no longer finds them", "[index_store]")
+{
+    IndexStore store;
+
+    store.beginTransaction();
+    store.add(DocumentBuilder{}.setName("a").setText("cat sat").build(1));
+    store.commitTransaction();
+
+    store.beginTransaction();
+    store.remove(1);
+    store.commitTransaction();
+
+    REQUIRE(store.search("cat").empty());
+}
+
+TEST_CASE("IndexStore: uncommitted changes are not visible via search", "[index_store]")
+{
+    IndexStore store;
+
+    store.beginTransaction();
+    store.add(DocumentBuilder{}.setName("a").setText("cat sat").build(1));
+    // нет commitTransaction — изменения ещё не применены
+
+    REQUIRE(store.search("cat").empty());
+}
+
+TEST_CASE("IndexStore: after commit a new transaction can be started", "[index_store]")
+{
+    IndexStore store;
+
+    store.beginTransaction();
+    store.commitTransaction();
+
+    auto result = store.beginTransaction();
     REQUIRE(result.has_value());
+}
+
+// ── UpdateTransaction: ошибки при дублировании ───────────────────────────────
+
+TEST_CASE("UpdateTransaction: add same doc twice returns DocumentAlreadyInAdditionList", "[transaction]")
+{
+    IndexStore store;
+    store.beginTransaction();
+
+    store.add(DocumentBuilder{}.setName("a").setText("cat").build(1));
+    auto result = store.add(DocumentBuilder{}.setName("b").setText("dog").build(1));
+
+    REQUIRE_FALSE(result.has_value());
+    REQUIRE(result.error() == IndexError::DocumentAlreadyInAdditionList);
+}
+
+TEST_CASE("UpdateTransaction: add doc that already exists returns DocumentAlreadyExists", "[transaction]")
+{
+    IndexStore store;
+
+    store.beginTransaction();
+    store.add(DocumentBuilder{}.setName("a").setText("cat").build(1));
+    store.commitTransaction();
+
+    store.beginTransaction();
+    auto result = store.add(DocumentBuilder{}.setName("b").setText("dog").build(1));
+
+    REQUIRE_FALSE(result.has_value());
+    REQUIRE(result.error() == IndexError::DocumentAlreadyExists);
+}
+
+TEST_CASE("UpdateTransaction: remove same doc twice returns DocumentAlreadyInRemovalList", "[transaction]")
+{
+    IndexStore store;
+
+    store.beginTransaction();
+    store.add(DocumentBuilder{}.setName("a").setText("cat").build(1));
+    store.commitTransaction();
+
+    store.beginTransaction();
+    store.remove(1);
+    auto result = store.remove(1);
+
+    REQUIRE_FALSE(result.has_value());
+    REQUIRE(result.error() == IndexError::DocumentAlreadyInRemovalList);
+}
+
+TEST_CASE("UpdateTransaction: remove non-existent doc returns DocumentNotFound", "[transaction]")
+{
+    IndexStore store;
+    store.beginTransaction();
+
+    auto result = store.remove(999);
+
+    REQUIRE_FALSE(result.has_value());
+    REQUIRE(result.error() == IndexError::DocumentNotFound);
 }

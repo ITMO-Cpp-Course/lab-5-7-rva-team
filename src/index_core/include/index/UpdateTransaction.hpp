@@ -1,12 +1,12 @@
 #pragma once
-
 #include "index/Document.hpp"
-#include "index/IndexStore.hpp"
-#include "index/UpdateTransaction.hpp"
+#include "index/Result.hpp"
 #include <vector>
 
 namespace idx
 {
+
+class IndexStore; // forward declaration — полный include не нужен, используем только указатель
 
 class UpdateTransaction
 {
@@ -20,9 +20,9 @@ class UpdateTransaction
     UpdateTransaction(UpdateTransaction&& other) = delete;
     UpdateTransaction& operator=(UpdateTransaction&& other) = delete;
 
-    void add(Document doc);
-    void remove(size_t id);
-    void commit();
+    Result<void> add(Document doc);
+    Result<void> remove(size_t id);
+    Result<void> commit();
 
   private:
     IndexStore* store;

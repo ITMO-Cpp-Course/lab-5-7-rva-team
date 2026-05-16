@@ -10,10 +10,13 @@ enum class IndexError
     None = 0,
     DocumentAlreadyExists,
     DocumentNotFound,
+    DocumentAlreadyInRemovalList,
+    DocumentAlreadyInAdditionList,
     InvalidDocumentId,
     InvalidDocumentContent,
     TransactionAlreadyActive,
     TransactionNotActive,
+    TransactionCommitted,
     IndexCorrupted,
     InternalError
 };
