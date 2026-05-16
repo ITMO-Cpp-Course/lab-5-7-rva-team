@@ -23,13 +23,13 @@ void InvertedIndex::remove(size_t docId)
     if (docs.find(docId) == docs.end())
         return;
 
-    // Проходим по всему индексу и убираем упоминания удаляемого документа.
+    // Проходим по всем словам и убираем упоминания удаляемого документа.
     // Если слово больше не встречается ни в одном документе — удаляем его из индекса тоже.
     for (auto it = index.begin(); it != index.end();)
     {
         it->second.erase(docId);
         if (it->second.empty())
-            it = index.erase(it);
+            it = index.erase(it); // свинка пеппа
         else
             ++it;
     }
