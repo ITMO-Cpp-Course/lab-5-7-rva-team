@@ -25,9 +25,15 @@ Result<void> IndexStore::remove(size_t id)
     return transaction_->remove(id);
 }
 
-std::vector<size_t> IndexStore::search(const std::string& word) const
+Result<std::vector<size_t>> IndexStore::search(const std::string& word) const
 {
-    return index_.search(word);
+    auto result = index_.search(word);
+    if (result.empty())
+    {
+        return std::unexpected(IndexError::WordNotFound);
+    }
+
+    return result;
 }
 
 Result<void> IndexStore::beginTransaction()

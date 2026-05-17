@@ -116,7 +116,10 @@ TEST_CASE("IndexStore: search works without a transaction", "[index_store]")
 {
     IndexStore store;
 
-    REQUIRE(store.search("cat").empty());
+    auto result = store.search("cat");
+
+    REQUIRE_FALSE(result.has_value());
+    REQUIRE(result.error() == IndexError::WordNotFound);
 }
 
 // ── IndexStore: add и remove требуют транзакцию ───────────────────────────────
@@ -183,8 +186,8 @@ TEST_CASE("IndexStore: commit applies added documents — search finds them", "[
     store.add(DocumentBuilder{}.setName("b").setText("dog ran").build(2));
     store.commitTransaction();
 
-    REQUIRE(store.search("cat").size() == 1);
-    REQUIRE(store.search("dog").size() == 1);
+    REQUIRE(store.search("cat").value().size() == 1);
+    REQUIRE(store.search("dog").value().size() == 1);
 }
 
 TEST_CASE("IndexStore: commit applies removed documents — search no longer finds them", "[index_store]")
@@ -199,7 +202,10 @@ TEST_CASE("IndexStore: commit applies removed documents — search no longer fin
     store.remove(1);
     store.commitTransaction();
 
-    REQUIRE(store.search("cat").empty());
+    auto result = store.search("cat");
+
+    REQUIRE_FALSE(result.has_value());
+    REQUIRE(result.error() == IndexError::WordNotFound);
 }
 
 TEST_CASE("IndexStore: uncommitted changes are not visible via search", "[index_store]")
@@ -210,7 +216,10 @@ TEST_CASE("IndexStore: uncommitted changes are not visible via search", "[index_
     store.add(DocumentBuilder{}.setName("a").setText("cat sat").build(1));
     // нет commitTransaction — изменения ещё не применены
 
-    REQUIRE(store.search("cat").empty());
+    auto result = store.search("cat");
+
+    REQUIRE_FALSE(result.has_value());
+    REQUIRE(result.error() == IndexError::WordNotFound);
 }
 
 TEST_CASE("IndexStore: after commit a new transaction can be started", "[index_store]")

@@ -29,6 +29,8 @@ std::string errorToString(IndexError error)
         return "Transaction already committed";
     case IndexError::IndexCorrupted:
         return "Index is corrupted";
+    case IndexError::WordNotFound:
+        return "Word not found in index";
     case IndexError::InternalError:
         return "Internal error";
     }

@@ -18,6 +18,7 @@ enum class IndexError
     TransactionNotActive,
     TransactionCommitted,
     IndexCorrupted,
+    WordNotFound,
     InternalError
 };
 
