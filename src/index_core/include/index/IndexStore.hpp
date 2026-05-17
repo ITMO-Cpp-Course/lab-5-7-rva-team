@@ -8,6 +8,8 @@
 namespace idx
 {
 
+class UpdateTransaction;
+
 // add() и remove() работают ТОЛЬКО внутри открытой транзакции.
 // search() доступен всегда.
 class IndexStore
