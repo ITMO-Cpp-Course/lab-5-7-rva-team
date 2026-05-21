@@ -13,6 +13,10 @@ std::string errorToString(IndexError error)
         return "Document already exists";
     case IndexError::DocumentNotFound:
         return "Document not found";
+    case IndexError::DocumentAlreadyInAdditionList:
+        return "Document is already in queue for addition";
+    case IndexError::DocumentAlreadyInRemovalList:
+        return "Document is already in queue for removal";
     case IndexError::InvalidDocumentId:
         return "Invalid document ID";
     case IndexError::InvalidDocumentContent:
@@ -20,7 +24,9 @@ std::string errorToString(IndexError error)
     case IndexError::TransactionAlreadyActive:
         return "Transaction already active";
     case IndexError::TransactionNotActive:
-        return "No active transaction";
+        return "Transaction not active";
+    case IndexError::TransactionCommitted:
+        return "Transaction already committed";
     case IndexError::IndexCorrupted:
         return "Index is corrupted";
     case IndexError::InternalError:

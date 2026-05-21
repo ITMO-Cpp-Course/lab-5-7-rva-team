@@ -23,13 +23,13 @@ void InvertedIndex::remove(size_t docId)
     if (docs.find(docId) == docs.end())
         return;
 
-    // Проходим по всему индексу и убираем упоминания удаляемого документа.
+    // Проходим по всем словам и убираем упоминания удаляемого документа.
     // Если слово больше не встречается ни в одном документе — удаляем его из индекса тоже.
     for (auto it = index.begin(); it != index.end();)
     {
         it->second.erase(docId);
         if (it->second.empty())
-            it = index.erase(it);
+            it = index.erase(it); // свинка пеппа
         else
             ++it;
     }
@@ -73,21 +73,42 @@ std::vector<std::string> InvertedIndex::tokenize(const std::string& text)
 {
     std::vector<std::string> words;
     std::string word;
+    // Флаг: встретили дефис после буквы, ждём следующий символ чтобы понять —
+    // это часть слова ("well-known") или просто разделитель ("hello - world")
+    bool pendingHyphen = false;
 
-    // Читаем символ за символом: буквы накапливаем в слово, всё остальное — разделитель.
     for (char ch : text)
     {
         auto c = static_cast<unsigned char>(ch);
         if (std::isalpha(c))
-            word += static_cast<char>(std::tolower(c));
-        else if (!word.empty())
         {
-            words.push_back(word);
-            word.clear();
+            // Если перед этой буквой был дефис после слова — дефис входит в слово
+            if (pendingHyphen)
+            {
+                word += '-';
+                pendingHyphen = false;
+            }
+            word += static_cast<char>(std::tolower(c));
+        }
+        else if (ch == '-' && !word.empty())
+        {
+            // Дефис после буквы: пока не решаем, ждём следующий символ
+            pendingHyphen = true;
+        }
+        else
+        {
+            // Любой другой символ (пробел, цифра, пунктуация)
+            // Если был отложенный дефис — он оказался разделителем, просто сбрасываем
+            pendingHyphen = false;
+            if (!word.empty())
+            {
+                words.push_back(word);
+                word.clear();
+            }
         }
     }
 
-    // Последнее слово — если текст заканчивается буквой, а не разделителем
+    // Последнее слово — если текст заканчивается буквой (или дефисом, который сбрасываем)
     if (!word.empty())
         words.push_back(word);
 

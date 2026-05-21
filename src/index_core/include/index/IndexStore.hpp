@@ -1,32 +1,38 @@
 #pragma once
 #include "index/InvertedIndex.hpp"
 #include "index/Result.hpp"
+#include <memory>
 #include <string>
 #include <vector>
 
 namespace idx
 {
 
-class UpdateTransaction; // forward declaration — полное определение не нужно
+class UpdateTransaction; // forward declaration — полный include только в .cpp
 
-// Управляющий слой над InvertedIndex.
-// Все публичные операции возвращают Result<T> — явно сигнализируя об ошибках.
-// Пока активна транзакция, прямые add/remove заблокированы.
+// Управляющий слой над InvertedIndex с транзакционным API.
+// add() и remove() работают ТОЛЬКО внутри открытой транзакции.
+// search() доступен всегда.
 class IndexStore
 {
   public:
-    // Добавить документ. Ошибка: документ уже есть, или активна транзакция.
+    IndexStore();
+    ~IndexStore(); // определён в .cpp — там доступен полный тип UpdateTransaction
+
+    // Поставить документ в очередь на добавление (требует активной транзакции)
     Result<void> add(Document doc);
 
-    // Удалить документ. Ошибка: документ не найден, или активна транзакция.
+    // Поставить документ в очередь на удаление (требует активной транзакции)
     Result<void> remove(size_t id);
 
-    // Найти документы по слову. Возвращает пустой список если ничего не найдено.
-    Result<std::vector<size_t>> search(const std::string& word) const;
+    // Найти документы по слову. Всегда доступен, не требует транзакции.
+    std::vector<size_t> search(const std::string& word) const;
 
-    // Начать транзакцию. После этого создай UpdateTransaction(store).
-    // Ошибка: транзакция уже активна.
+    // Открыть транзакцию. Ошибка: уже активна.
     Result<void> beginTransaction();
+
+    // Применить все изменения транзакции к индексу. Ошибка: транзакция не открыта.
+    Result<void> commitTransaction();
 
     // Методы для UpdateTransaction — не вызывай напрямую из прикладного кода
     bool has(size_t id) const;
@@ -36,6 +42,7 @@ class IndexStore
   private:
     InvertedIndex index_;
     bool transactionActive_ = false;
+    std::unique_ptr<UpdateTransaction> transaction_; // создаётся при beginTransaction
 };
 
 } // namespace idx
