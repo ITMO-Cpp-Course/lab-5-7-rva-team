@@ -52,6 +52,49 @@ TEST_CASE("InvertedIndex: search is case-insensitive", "[inverted_index]")
     REQUIRE(inv.search("Hello").size() == 1);
 }
 
+// ── InvertedIndex: слова с дефисами ──────────────────────────────────────────
+
+TEST_CASE("InvertedIndex: hyphenated word is treated as one token", "[inverted_index]")
+{
+    InvertedIndex inv;
+    inv.add(DocumentBuilder{}.setName("a").setText("well-known fact").build(1));
+
+    // "well-known" — одно слово, не два
+    REQUIRE(inv.search("well-known").size() == 1);
+    REQUIRE(inv.search("well").empty());
+    REQUIRE(inv.search("known").empty());
+}
+
+TEST_CASE("InvertedIndex: word with two hyphens is one token", "[inverted_index]")
+{
+    InvertedIndex inv;
+    inv.add(DocumentBuilder{}.setName("a").setText("mother-in-law visited").build(1));
+
+    REQUIRE(inv.search("mother-in-law").size() == 1);
+    REQUIRE(inv.search("mother").empty());
+}
+
+TEST_CASE("InvertedIndex: hyphen surrounded by spaces is a separator", "[inverted_index]")
+{
+    InvertedIndex inv;
+    inv.add(DocumentBuilder{}.setName("a").setText("hello - world").build(1));
+
+    // дефис между пробелами — разделитель, слова независимы
+    REQUIRE(inv.search("hello").size() == 1);
+    REQUIRE(inv.search("world").size() == 1);
+    REQUIRE(inv.search("hello-world").empty());
+}
+
+TEST_CASE("InvertedIndex: trailing hyphen is ignored", "[inverted_index]")
+{
+    InvertedIndex inv;
+    inv.add(DocumentBuilder{}.setName("a").setText("test- word").build(1));
+
+    // дефис в конце слова без буквы после — не часть слова
+    REQUIRE(inv.search("test").size() == 1);
+    REQUIRE(inv.search("test-").empty());
+}
+
 // ── InvertedIndex: подсчёт вхождений ─────────────────────────────────────────
 
 TEST_CASE("InvertedIndex: wordCount returns correct number of occurrences", "[inverted_index]")
